@@ -1,0 +1,8 @@
+{"id": "ge01", "type": "math", "task": "What is 13 + 29?", "answer_contains": ["42"]}
+{"id": "ge02", "type": "fact", "task": "What is the capital of Japan?", "answer_contains": ["Tokyo"]}
+{"id": "ge03", "type": "translate", "task": "How do you say 'thank you' in Spanish?", "answer_contains": ["gracias"]}
+{"id": "ge04", "type": "reason", "task": "A movie starts at 3pm and ends at 5pm. How many hours long is it?", "answer_contains": ["2"]}
+{"id": "ge05", "type": "fact", "task": "Name one primary color.", "answer_contains": ["red", "blue", "yellow"]}
+{"id": "ge06", "type": "define", "task": "In one sentence, what is photosynthesis?", "answer_contains": ["light", "sun", "plant"]}
+{"id": "ge07", "type": "code", "task": "Write a single line of Python that prints hello world.", "answer_contains": ["print"]}
+{"id": "ge08", "type": "fact", "task": "How many days are in a week?", "answer_contains": ["7", "seven"]}
