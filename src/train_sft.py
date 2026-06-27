@@ -22,9 +22,12 @@ def _sft_example(tok, ticket: dict):
     return input_ids, labels
 
 
-def train_sft(tok, model, epochs: int = 5, lr: float = 1e-4, log=print):
-    """Train the LoRA in-place with plain supervised fine-tuning. Returns the model."""
+def train_sft(tok, model, epochs: int = 5, lr: float = 1e-4, limit: int | None = None, log=print):
+    """Train the LoRA in-place with plain supervised fine-tuning. Returns the model.
+    limit caps the number of training tickets — only used by --smoke for speed."""
     train = load_jsonl("tickets_train.jsonl")
+    if limit is not None:
+        train = train[:limit]
     opt = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad], lr=lr)
     model.train()
     for ep in range(epochs):

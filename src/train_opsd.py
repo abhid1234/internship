@@ -46,9 +46,13 @@ def _logits_over_reply(model, prompt_ids: torch.Tensor, reply_ids: torch.Tensor)
     return logits[P - 1 : P - 1 + T, :]                    # the T predictions for the reply
 
 
-def train_opsd(tok, model, epochs: int = 5, lr: float = 1e-4, temperature: float = 0.8, log=print):
-    """Train the LoRA in-place with on-policy self-distillation. Returns the model."""
+def train_opsd(tok, model, epochs: int = 5, lr: float = 1e-4, temperature: float = 0.8,
+               max_new_tokens: int = 200, limit: int | None = None, log=print):
+    """Train the LoRA in-place with on-policy self-distillation. Returns the model.
+    limit caps the number of training tickets — only used by --smoke for speed."""
     train = load_jsonl("tickets_train.jsonl")
+    if limit is not None:
+        train = train[:limit]
     opt = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad], lr=lr)
 
     for ep in range(epochs):
@@ -61,7 +65,8 @@ def train_opsd(tok, model, epochs: int = 5, lr: float = 1e-4, temperature: float
 
             # 1) student writes a reply in its own words (patch ON)
             model.eval()
-            reply_ids = _sample_reply(tok, model, student_prompt, temperature=temperature).cpu()
+            reply_ids = _sample_reply(tok, model, student_prompt, max_new_tokens=max_new_tokens,
+                                      temperature=temperature).cpu()
             if reply_ids.numel() == 0:
                 continue
             model.train()

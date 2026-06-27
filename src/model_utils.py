@@ -32,12 +32,16 @@ TEACHER_SYSTEM = PERSONA
 
 
 def load(model_name: str = DEFAULT_MODEL):
-    """Load tokenizer + model in bf16 on GPU. Returns (tok, model)."""
+    """Load tokenizer + model. bf16 on GPU; falls back to fp32 on CPU so the
+    --smoke plumbing check can run anywhere (no GPU required). Returns (tok, model)."""
     tok = AutoTokenizer.from_pretrained(model_name)
     if tok.pad_token is None:
         tok.pad_token = tok.eos_token
+    use_cuda = torch.cuda.is_available()
     model = AutoModelForCausalLM.from_pretrained(
-        model_name, torch_dtype=torch.bfloat16, device_map="cuda"
+        model_name,
+        torch_dtype=torch.bfloat16 if use_cuda else torch.float32,
+        device_map="cuda" if use_cuda else "cpu",
     )
     return tok, model
 
@@ -84,13 +88,18 @@ def load_jsonl(name: str) -> list[dict]:
     return [json.loads(l) for l in (DATA / name).read_text().splitlines() if l.strip()]
 
 
-def evaluate(tok, model, *, teacher: bool = False, max_new_tokens: int = 220) -> dict:
+def evaluate(tok, model, *, teacher: bool = False, max_new_tokens: int = 220,
+             limit: int | None = None) -> dict:
     """
     Generate replies for the held-out test tickets and the forgetting set, then grade.
 
     teacher=False is the real measurement (student, no playbook) — that's TRANSFER.
     teacher=True shows the in-context 'ceiling' (model WITH playbook) — a sanity check
     that the skill is learnable at all.
+
+    limit caps how many tickets we actually run — only used by --smoke to keep the
+    plumbing check fast (the grader still divides by the full file, so smoke numbers
+    are meaningless, which is the point).
     """
     import sys
     sys.path.insert(0, str(ROOT / "src"))
@@ -98,6 +107,8 @@ def evaluate(tok, model, *, teacher: bool = False, max_new_tokens: int = 220) ->
 
     test = load_jsonl("tickets_test.jsonl")
     gen = load_jsonl("general_eval.jsonl")
+    if limit is not None:
+        test, gen = test[:limit], gen[:limit]
 
     support_preds, general_preds, transcripts = {}, {}, []
     for t in test:
