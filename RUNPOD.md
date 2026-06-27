@@ -13,7 +13,7 @@ A dedicated GPU, no disconnects. The whole experiment costs well under $1 of cre
 Work inside `/workspace` so it survives a stop/restart.
 ```bash
 cd /workspace
-git clone https://github.com/<you>/internship.git    # or upload a zip via the Jupyter file panel
+git clone https://github.com/abhid1234/internship.git    # or upload a zip via the Jupyter file panel
 cd internship
 pip install transformers peft accelerate              # torch is already in the template
 ```

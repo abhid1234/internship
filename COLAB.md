@@ -5,7 +5,7 @@ Open a new Colab notebook, set **Runtime → Change runtime type → GPU** (an L
 ### 1. Get the code onto Colab
 Easiest is to push this folder to a GitHub repo first, then:
 ```python
-!git clone https://github.com/<you>/internship.git
+!git clone https://github.com/abhid1234/internship.git
 %cd internship
 ```
 *(No repo yet? Zip the folder, drag it into Colab's file panel, then `!unzip internship.zip`.)*
