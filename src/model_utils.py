@@ -11,11 +11,22 @@ This file just handles the plumbing: load the model, build those two prompts, ge
 replies, and grade them. The actual learning lives in train_sft.py and train_opsd.py.
 """
 from __future__ import annotations
-import json
+import json, random
 from pathlib import Path
 
+import numpy as np
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
+
+
+def seed_all(seed: int) -> None:
+    """Make a run reproducible: same seed -> same sampled replies -> same scores.
+    Matters most for OPSD, which samples the student's replies (temperature > 0)."""
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
@@ -38,11 +49,12 @@ def load(model_name: str = DEFAULT_MODEL):
     if tok.pad_token is None:
         tok.pad_token = tok.eos_token
     use_cuda = torch.cuda.is_available()
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        torch_dtype=torch.bfloat16 if use_cuda else torch.float32,
-        device_map="cuda" if use_cuda else "cpu",
-    )
+    dt = torch.bfloat16 if use_cuda else torch.float32
+    dev = "cuda" if use_cuda else "cpu"
+    try:  # transformers renamed torch_dtype -> dtype; support both old and new
+        model = AutoModelForCausalLM.from_pretrained(model_name, dtype=dt, device_map=dev)
+    except TypeError:
+        model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=dt, device_map=dev)
     return tok, model
 
 

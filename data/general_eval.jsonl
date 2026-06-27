@@ -6,3 +6,11 @@
 {"id": "ge06", "type": "define", "task": "In one sentence, what is photosynthesis?", "answer_contains": ["light", "sun", "plant"]}
 {"id": "ge07", "type": "code", "task": "Write a single line of Python that prints hello world.", "answer_contains": ["print"]}
 {"id": "ge08", "type": "fact", "task": "How many days are in a week?", "answer_contains": ["7", "seven"]}
+{"id": "ge09", "type": "math", "task": "What is 7 times 8?", "answer_contains": ["56"]}
+{"id": "ge10", "type": "fact", "task": "Who wrote the play Romeo and Juliet?", "answer_contains": ["Shakespeare"]}
+{"id": "ge11", "type": "fact", "task": "What is the largest planet in our solar system?", "answer_contains": ["Jupiter"]}
+{"id": "ge12", "type": "define", "task": "In one sentence, what is photosynthesis?", "answer_contains": ["light", "sunlight", "energy"]}
+{"id": "ge13", "type": "reason", "task": "If a train leaves at 2pm and arrives at 5pm, how many hours was the trip?", "answer_contains": ["3"]}
+{"id": "ge14", "type": "translate", "task": "Translate 'good morning' into Spanish.", "answer_contains": ["buenos dias", "buenos d\u00edas"]}
+{"id": "ge15", "type": "code", "task": "Write a Python one-liner that reverses the string s.", "answer_contains": ["[::-1]"]}
+{"id": "ge16", "type": "fact", "task": "What is the chemical symbol for water?", "answer_contains": ["H2O", "H\u2082O"]}

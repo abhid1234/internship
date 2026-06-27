@@ -1,6 +1,7 @@
 # Running on RunPod (GPU pod)
 
-A dedicated GPU, no disconnects. The whole experiment costs well under $1 of credits — but
+A dedicated GPU, no disconnects. The default run averages OPSD over 3 seeds, so budget
+**~$1–2** of credits (well under $1 if you use `--opsd-seeds 0`) — and
 **stop the pod when you're done** or it keeps billing.
 
 ## 1. Create the pod
@@ -30,15 +31,21 @@ python experiment.py --smoke
 ```
 Numbers are meaningless here — we just want it to finish without an error.
 
-## 5. The real run (~15–30 min)
+## 5. The real run (~45–90 min, 3 OPSD seeds)
 ```bash
-python experiment.py
+python experiment.py                 # default: OPSD averaged over seeds 0,1,2
+# faster/cheaper single-seed run (~15–30 min):
+python experiment.py --opsd-seeds 0
 ```
-Prints the scoreboard and writes `../outputs/results.json` (numbers) and
-`../outputs/transcripts.json` (every reply the models gave — worth reading).
+Prints the scoreboard (OPSD shown as **mean + seed range**) and writes
+`../outputs/results.json` (numbers + config/git-sha) and `../outputs/transcripts.json`
+(every reply the models gave — worth reading).
 
 ## 6. Save your results, then STOP the pod
 - In Jupyter's file browser, right-click `outputs/results.json` and `outputs/transcripts.json` → **Download**.
+- Interpret them on your laptop (no GPU needed): `python src/analyze.py` prints the three
+  verdicts (did it transfer? OPSD vs SFT? did it forget?). `python src/analyze.py --show sft`
+  dumps the *failing* replies — gold for a writeup.
 - Then **Stop** (or **Terminate**) the pod in the RunPod dashboard so it stops using credits.
   - *Stop* keeps the `/workspace` disk (small ongoing storage cost) so you can resume.
   - *Terminate* deletes everything (no further cost). Use this once you've downloaded the results.

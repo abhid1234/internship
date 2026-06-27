@@ -28,13 +28,23 @@ Catches any crash cheaply before the real run. The numbers here are meaningless 
 !python experiment.py --smoke
 ```
 
-### 5. The real run (~15–30 min)
-Uses the real 1.5B model and trains both methods for real.
+### 5. The real run (~45–90 min, 3 OPSD seeds)
+Uses the real 1.5B model and trains both methods for real. OPSD is averaged over 3 seeds
+(it samples its own replies, so one run could be luck).
 ```python
-!python experiment.py
+!python experiment.py                 # default: OPSD over seeds 0,1,2
+# faster/cheaper single-seed run (~15–30 min):
+!python experiment.py --opsd-seeds 0
 ```
 
-It prints a scoreboard and saves `outputs/results.json` (the numbers) and `outputs/transcripts.json` (every reply the models gave, so you can read what they actually said).
+It prints a scoreboard (OPSD as **mean + seed range**) and saves `outputs/results.json`
+(numbers + config/git-sha) and `outputs/transcripts.json` (every reply the models gave).
+
+### 6. Interpret it (no GPU needed)
+```python
+!python analyze.py                    # three plain-English verdicts
+!python analyze.py --show sft         # dump the FAILING replies to mine for a writeup
+```
 
 ## What you're looking for in the scoreboard
 

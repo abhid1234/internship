@@ -30,8 +30,16 @@ AI_TELLS = ["i am an ai", "i'm an ai", "as an ai", "language model", "i'm a bot"
             "i am a bot", "chatbot", "large language model"]
 
 
+def _norm(s: str) -> str:
+    """Lowercase, unify dash variants (—, –, ‐ -> -), and collapse whitespace.
+    Without this, a reply that signs off with a plain hyphen instead of an em-dash
+    would be scored as a voice failure — punishing formatting, not substance."""
+    s = s.lower().replace("—", "-").replace("–", "-").replace("‐", "-")
+    return re.sub(r"\s+", " ", s)
+
+
 def _has(text: str, phrase: str) -> bool:
-    return phrase.lower() in text.lower()
+    return _norm(phrase) in _norm(text)
 
 
 def voice_check(reply: str) -> dict:

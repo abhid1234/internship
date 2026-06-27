@@ -37,9 +37,10 @@ We only test on **brand-new tickets the AI never saw** — situations the rules 
 
 - `data/persona.md` — the support playbook (what the teacher gets to read).
 - `data/tickets_train.jsonl` — the "internship": example tickets + ideal answers.
-- `data/tickets_test.jsonl` — held-out **new** tickets we grade on.
+- `data/tickets_test.jsonl` — 32 held-out **new** tickets we grade on.
 - `src/` — the grader (checks the rules) + the training code (runs on a GPU).
-- `notebook` — the Colab that does the actual training on a paid GPU.
+- `src/analyze.py` — reads the results on your laptop (no GPU) and prints the three verdicts.
+- `COLAB.md` / `RUNPOD.md` — copy-paste guides to run it on a paid GPU.
 
 ## Honest risks
 
