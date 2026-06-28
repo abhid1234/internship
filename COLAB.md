@@ -28,6 +28,15 @@ Catches any crash cheaply before the real run. The numbers here are meaningless 
 !python experiment.py --smoke
 ```
 
+### 4.5 Validity gate — check the model before the big spend (~5 min)
+Real 1.5B, no training: can it follow the playbook in-context? If not, the full run is
+uninformative — so check first.
+```python
+!python experiment.py --ceiling-only
+# if it FAILs, try a stronger model:
+!python experiment.py --ceiling-only --model google/gemma-2-2b-it
+```
+
 ### 5. The real run (~45–90 min, 3 OPSD seeds)
 Uses the real 1.5B model and trains both methods for real. OPSD is averaged over 3 seeds
 (it samples its own replies, so one run could be luck).

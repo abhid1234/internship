@@ -31,6 +31,16 @@ python experiment.py --smoke
 ```
 Numbers are meaningless here — we just want it to finish without an error.
 
+## 4.5 Validity gate — check the model BEFORE the big spend (~5 min)
+The real 1.5B model, no training — just "can it follow the playbook when it can read it?"
+If this fails, the full run would be uninformative, so check it first for pennies.
+```bash
+python experiment.py --ceiling-only
+```
+- **PASS** (ceiling clearly beats base) → go to step 5.
+- **FAIL** (ceiling ≈ base) → swap to a stronger model and re-check:
+  `python experiment.py --ceiling-only --model google/gemma-2-2b-it`
+
 ## 5. The real run (~45–90 min, 3 OPSD seeds)
 ```bash
 python experiment.py                 # default: OPSD averaged over seeds 0,1,2

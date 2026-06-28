@@ -89,7 +89,8 @@ def _persist(results: dict, opsd_runs: list, seeds: list):
 
 
 def run(model_name: str = DEFAULT_MODEL, sft_epochs: int = 5, opsd_epochs: int = 5,
-        max_new_tokens: int = 220, limit: int | None = None, opsd_seeds=(0, 1, 2)):
+        max_new_tokens: int = 220, limit: int | None = None, opsd_seeds=(0, 1, 2),
+        ceiling_only: bool = False):
     OUT.mkdir(exist_ok=True)
     seeds = list(opsd_seeds)
     base_seed = seeds[0]
@@ -112,6 +113,22 @@ def run(model_name: str = DEFAULT_MODEL, sft_epochs: int = 5, opsd_epochs: int =
     print("base student :", headline(base_student))
     print("ceiling(ctx) :", headline(ceiling))
     _persist(results, [], seeds)              # checkpoint #1
+
+    if ceiling_only:
+        # VALIDITY GATE: no training, just "can this model follow the playbook in-context?"
+        # Run this first on the pod (~5 min, pennies) before committing to the full job.
+        b = base_student["transfer"]["pass_all_acc"]
+        c = ceiling["transfer"]["pass_all_acc"]
+        print("\n=== VALIDITY GATE (no training) ===")
+        print(f"base {b:.0%}  ->  ceiling {c:.0%}")
+        if c > 0.5 and c - b > 0.15:
+            print("PASS: the model clearly follows the playbook in-context. Proceed to the full run.")
+        elif c - b > 0.06:
+            print("WEAK: ceiling beats base but isn't high. The full run may be noisy; consider a stronger model.")
+        else:
+            print("FAIL: ceiling ~ base. This model can't follow the playbook even when reading it.")
+            print("      Pick a stronger model (e.g. Gemma-2-2b-it) BEFORE spending on the full run.")
+        return results
 
     # 1. SFT (deterministic; seed the LoRA init for repro)
     print("\n=== 1. SFT (memorize the script) ===")
@@ -176,10 +193,15 @@ if __name__ == "__main__":
     ap.add_argument("--opsd-epochs", type=int, default=5)
     ap.add_argument("--opsd-seeds", default="0,1,2",
                     help="comma-separated seeds for OPSD; use one (e.g. '0') for a faster/cheaper run")
+    ap.add_argument("--ceiling-only", action="store_true",
+                    help="validity gate: real model, NO training (~5 min, pennies). Run first on the pod.")
     a = ap.parse_args()
     seeds = tuple(int(x) for x in a.opsd_seeds.split(",") if x.strip() != "")
     if a.smoke:
         print(">>> SMOKE TEST: tiny model, 1 epoch, short replies, 3 tickets, 2 seeds. Numbers are meaningless; we're just checking nothing crashes.")
         run(SMOKE_MODEL, sft_epochs=1, opsd_epochs=1, max_new_tokens=48, limit=3, opsd_seeds=(0, 1))
+    elif a.ceiling_only:
+        print(">>> VALIDITY GATE: real model, no training. Checks the model can follow the playbook in-context before you commit to the full run.")
+        run(a.model, opsd_seeds=seeds, ceiling_only=True)
     else:
         run(a.model, sft_epochs=a.sft_epochs, opsd_epochs=a.opsd_epochs, opsd_seeds=seeds)
