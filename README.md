@@ -40,6 +40,7 @@ We only test on **brand-new tickets the AI never saw** — situations the rules 
 - `data/tickets_test.jsonl` — 32 held-out **new** tickets we grade on.
 - `src/` — the grader (checks the rules) + the training code (runs on a GPU).
 - `src/analyze.py` — reads the results on your laptop (no GPU) and prints the three verdicts.
+- `PREDICTIONS.md` — what we predict, pre-registered before the run (kept honest).
 - `COLAB.md` / `RUNPOD.md` — copy-paste guides to run it on a paid GPU.
 
 ## Honest risks

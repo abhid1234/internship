@@ -65,6 +65,29 @@ def _mean(metrics_list: list[dict]) -> dict:
     }
 
 
+def _persist(results: dict, opsd_runs: list, seeds: list):
+    """Write results.json + transcripts.json from the current (possibly partial) state.
+    Called after every step so a pod disconnect mid-run costs one step, not the whole job.
+    Splits bulky transcripts into their own file WITHOUT mutating the in-memory metrics."""
+    def split(m):
+        if m is None:
+            return None, None
+        return {k: v for k, v in m.items() if k != "transcripts"}, m.get("transcripts")
+
+    out = {k: results[k] for k in ("model", "config") if k in results}
+    transcripts = {}
+    for key in ("base_student", "ceiling_in_context", "sft", "opsd"):
+        if key in results:
+            out[key], transcripts[key] = split(results[key])
+    for k in ("opsd_mean", "opsd_seeds"):
+        if k in results:
+            out[k] = results[k]
+    for s, m in zip(seeds, opsd_runs):
+        _, transcripts[f"opsd_seed{s}"] = split(m)
+    (OUT / "results.json").write_text(json.dumps(out, indent=2))
+    (OUT / "transcripts.json").write_text(json.dumps(transcripts, indent=2))
+
+
 def run(model_name: str = DEFAULT_MODEL, sft_epochs: int = 5, opsd_epochs: int = 5,
         max_new_tokens: int = 220, limit: int | None = None, opsd_seeds=(0, 1, 2)):
     OUT.mkdir(exist_ok=True)
@@ -88,6 +111,7 @@ def run(model_name: str = DEFAULT_MODEL, sft_epochs: int = 5, opsd_epochs: int =
     results["ceiling_in_context"] = ceiling
     print("base student :", headline(base_student))
     print("ceiling(ctx) :", headline(ceiling))
+    _persist(results, [], seeds)              # checkpoint #1
 
     # 1. SFT (deterministic; seed the LoRA init for repro)
     print("\n=== 1. SFT (memorize the script) ===")
@@ -97,6 +121,7 @@ def run(model_name: str = DEFAULT_MODEL, sft_epochs: int = 5, opsd_epochs: int =
     sft = evaluate(tok, model, max_new_tokens=max_new_tokens, limit=limit)
     results["sft"] = sft
     print("after SFT    :", headline(sft))
+    _persist(results, [], seeds)              # checkpoint #2
 
     # 2. OPSD across seeds (sampling is stochastic -> average over runs)
     print(f"\n=== 2. OPSD (on-policy self-distillation) x{len(seeds)} seeds {seeds} ===")
@@ -109,10 +134,12 @@ def run(model_name: str = DEFAULT_MODEL, sft_epochs: int = 5, opsd_epochs: int =
         m = evaluate(tok, model, max_new_tokens=max_new_tokens, limit=limit)
         print(f"OPSD seed {s}  :", headline(m))
         opsd_runs.append(m)
-    opsd = opsd_runs[0]                       # representative run: keeps rows + transcripts for inspection
-    results["opsd"] = opsd
-    results["opsd_mean"] = _mean(opsd_runs)
-    results["opsd_seeds"] = [{"seed": s, **_headline_only(m)} for s, m in zip(seeds, opsd_runs)]
+        # checkpoint after EACH seed so a disconnect never wastes more than one seed
+        results["opsd"] = opsd_runs[0]        # representative run: keeps rows + transcripts for inspection
+        results["opsd_mean"] = _mean(opsd_runs)
+        results["opsd_seeds"] = [{"seed": ss, **_headline_only(mm)} for ss, mm in zip(seeds, opsd_runs)]
+        _persist(results, opsd_runs, seeds)
+    opsd = opsd_runs[0]
 
     # 3. the scoreboard
     print("\n=== SCOREBOARD ===")
@@ -132,13 +159,7 @@ def run(model_name: str = DEFAULT_MODEL, sft_epochs: int = 5, opsd_epochs: int =
     if len(seeds) > 1:
         print(f"  OPSD transfer(both) across seeds: min {min(pass_all):.0%} / max {max(pass_all):.0%}  (seeds {seeds})")
 
-    # strip bulky transcripts out of the saved metrics, keep them in a separate file
-    transcripts = {k: results[k].pop("transcripts", None) for k in ("base_student", "ceiling_in_context", "sft", "opsd")}
-    for s, m in zip(seeds, opsd_runs):
-        if m is not opsd:                     # the representative run's transcripts were already popped above
-            transcripts[f"opsd_seed{s}"] = m.pop("transcripts", None)
-    (OUT / "results.json").write_text(json.dumps(results, indent=2))
-    (OUT / "transcripts.json").write_text(json.dumps(transcripts, indent=2))
+    _persist(results, opsd_runs, seeds)       # final save (also written incrementally above)
     print(f"\nsaved -> {OUT/'results.json'} and {OUT/'transcripts.json'}")
     print("interpret it on your laptop (no GPU):  python analyze.py")
     return results
